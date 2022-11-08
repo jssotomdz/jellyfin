@@ -1,0 +1,50 @@
+name: jellyfin # you probably want to 'snapcraft register <name>'
+version: '10.8.7'
+base: core22
+summary: The Free Software Media System
+description: |
+  Jellyfin is a Free Software Media System that puts you in control of managing and streaming your media. It is an alternative to the proprietary Emby and Plex, to provide media from a dedicated server to end-user devices via multiple apps. Jellyfin is descended from Emby's 3.5.2 release and ported to the .NET Core framework to enable full cross-platform support. There are no strings attached, no premium licenses or features, and no hidden agendas: just a team who want to build something better and work together to achieve it. We welcome anyone who is interested in joining us in our quest!
+
+grade: stable # must be 'stable' to release into candidate/stable channels
+confinement: strict # use 'strict' once you have the right plugs and slots
+
+apps:
+  jellyfin:
+    command: /bin/ubuntu.amd64/jellyfin
+
+environment:
+  LD_LIBRARY_PATH: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET:$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET/liblttng-ust/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+
+parts:
+  jellyfin:
+    after: [liblttng-ust]
+    # See 'snapcraft plugins'
+    plugin: nil
+    source: .
+    override-build: |
+      ./build.sh -t native -p ubuntu.amd64
+    build-packages:
+      - dotnet-sdk-6.0
+      - libssl-dev
+      - debhelper
+      - libcurl4-openssl-dev
+      - libfontconfig1-dev
+      - libfreetype6-dev
+    stage-packages:
+      - ffmpeg
+  liblttng-ust:
+    plugin: autotools
+    source: https://github.com/lttng/lttng-ust.git
+    source-tag: 'v2.12.0'
+    override-build: |
+      ./bootstrap
+      craftctl default
+    autotools-configure-parameters:
+      - --prefix=/usr
+      - --disable-man-pages
+    build-packages:
+      - libnuma-dev
+      - liburcu-dev
+      - pkg-config
+      - libtool
+      - autoconf
